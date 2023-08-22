@@ -30,11 +30,19 @@ backup_server_keys() {
  #   az storage blob upload --account-name "$AZURE_STORAGE_ACCOUNT" --account-key "$AZURE_STORAGE_KEY" --container-name "$AZURE_CONTAINER_NAME" --name serverkey.asc --type block --file "$backup_dir/serverkey.asc"
 #}
 
-# Modify these lines in your script
+# using virtual environment
 push_backup_to_azure_blob() {
-    /home/ubuntu/azure-cli-venv/bin/az storage blob upload --account-name "$AZURE_STORAGE_ACCOUNT" --account-key "$AZURE_STORAGE_KEY" --container-name "$AZURE_CONTAINER_NAME" --name passbolt_data.sql --type block --file "$backup_dir/passbolt_data.sql"
-    /home/ubuntu/azure-cli-venv/bin/az storage blob upload --account-name "$AZURE_STORAGE_ACCOUNT" --account-key "$AZURE_STORAGE_KEY" --container-name "$AZURE_CONTAINER_NAME" --name serverkey_private.asc --type block --file "$backup_dir/serverkey_private.asc"
-    /home/ubuntu/azure-cli-venv/bin/az storage blob upload --account-name "$AZURE_STORAGE_ACCOUNT" --account-key "$AZURE_STORAGE_KEY" --container-name "$AZURE_CONTAINER_NAME" --name serverkey.asc --type block --file "$backup_dir/serverkey.asc"
+    timestamp=$(date +"%Y%m%d%H%M%S")
+    blob_name="passbolt_data_${timestamp}.sql"
+    /home/ubuntu/azure-cli-venv/bin/az storage blob upload --account-name "$AZURE_STORAGE_ACCOUNT" --account-key "$AZURE_STORAGE_KEY" --container-name "$AZURE_CONTAINER_NAME" --name "$blob_name" --type block --file "$backup_dir/passbolt_data.sql"
+
+    timestamp=$(date +"%Y%m%d%H%M%S")
+    blob_name="serverkey_private_${timestamp}.asc"
+    /home/ubuntu/azure-cli-venv/bin/az storage blob upload --account-name "$AZURE_STORAGE_ACCOUNT" --account-key "$AZURE_STORAGE_KEY" --container-name "$AZURE_CONTAINER_NAME" --name "$blob_name" --type block --file "$backup_dir/serverkey_private.asc"
+
+    timestamp=$(date +"%Y%m%d%H%M%S")
+    blob_name="serverkey_${timestamp}.asc"
+    /home/ubuntu/azure-cli-venv/bin/az storage blob upload --account-name "$AZURE_STORAGE_ACCOUNT" --account-key "$AZURE_STORAGE_KEY" --container-name "$AZURE_CONTAINER_NAME" --name "$blob_name" --type block --file "$backup_dir/serverkey.asc"
 }
 
 start_containers
