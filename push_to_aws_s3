@@ -1,0 +1,35 @@
+#!/bin/bash
+
+
+backup_dir="passbolt_backups"
+aws_bucket_name="passbolt-database-backup"
+
+mkdir -p "$backup_dir"
+
+start_containers() {
+    docker-compose up -d
+    sleep 15
+}
+export_passbolt_database() {
+    db_container_id=$(docker-compose ps -q db)
+    # Export Passbolt database to a SQL file within the database container and save it to the host
+    docker exec "$db_container_id" mysqldump -u passbolt -pP4ssb0lt passbolt > "$backup_dir/passbolt_data.sql"
+}
+
+backup_server_key() {
+    docker cp ubuntu_passbolt_1:/etc/passbolt/gpg/serverkey_private.asc "$backup_dir/serverkey_private.asc"
+    docker cp ubuntu_passbolt_1:/etc/passbolt/gpg/serverkey.asc "$backup_dir/serverkey.asc"
+}
+
+push_backup_to_aws_s3() {
+    # Upload the backup files to AWS S3 bucket
+    aws s3 cp "$backup_dir/passbolt_data.sql" "s3://$aws_bucket_name/passbolt_data.sql"
+    aws s3 cp "$backup_dir/serverkey_private.asc" "s3://$aws_bucket_name/serverkey_private.asc"
+    aws s3 cp "$backup_dir/serverkey.asc" "s3://$aws_bucket_name/serverkey.asc"
+}
+
+
+start_containers
+export_passbolt_database
+backup_server_key
+push_backup_to_aws_s3
