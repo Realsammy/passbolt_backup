@@ -1,0 +1,43 @@
+#!/bin/bash
+
+# Azure storage account details
+AZURE_STORAGE_ACCOUNT="storage_account"
+AZURE_STORAGE_KEY="azure-storage-account-key"
+AZURE_CONTAINER_NAME="passbolt"
+
+backup_dir="passbolt_backups"
+
+mkdir -p "$backup_dir"
+
+start_containers() {
+    docker-compose up -d
+    sleep 15
+}
+
+export_passbolt_database() {
+    db_container_id=$(docker-compose ps -q db)
+    docker exec "$db_container_id" mysqldump -u passbolt -pP4ssb0lt passbolt > "$backup_dir/passbolt_data.sql"
+}
+
+backup_server_keys() {
+    docker cp ubuntu_passbolt_1:/etc/passbolt/gpg/serverkey_private.asc "$backup_dir/serverkey_private.asc"
+    docker cp ubuntu_passbolt_1:/etc/passbolt/gpg/serverkey.asc "$backup_dir/serverkey.asc"
+}
+
+#push_backup_to_azure_blob() {
+   # az storage blob upload --account-name "$AZURE_STORAGE_ACCOUNT" --account-key "$AZURE_STORAGE_KEY" --container-name "$AZURE_CONTAINER_NAME" --name passbolt_data.sql --type block --file "$backup_dir/passbolt_data.sql"
+  #  az storage blob upload --account-name "$AZURE_STORAGE_ACCOUNT" --account-key "$AZURE_STORAGE_KEY" --container-name "$AZURE_CONTAINER_NAME" --name serverkey_private.asc --type block --file "$backup_dir/serverkey_private.asc"
+ #   az storage blob upload --account-name "$AZURE_STORAGE_ACCOUNT" --account-key "$AZURE_STORAGE_KEY" --container-name "$AZURE_CONTAINER_NAME" --name serverkey.asc --type block --file "$backup_dir/serverkey.asc"
+#}
+
+# Modify these lines in your script
+push_backup_to_azure_blob() {
+    /home/ubuntu/azure-cli-venv/bin/az storage blob upload --account-name "$AZURE_STORAGE_ACCOUNT" --account-key "$AZURE_STORAGE_KEY" --container-name "$AZURE_CONTAINER_NAME" --name passbolt_data.sql --type block --file "$backup_dir/passbolt_data.sql"
+    /home/ubuntu/azure-cli-venv/bin/az storage blob upload --account-name "$AZURE_STORAGE_ACCOUNT" --account-key "$AZURE_STORAGE_KEY" --container-name "$AZURE_CONTAINER_NAME" --name serverkey_private.asc --type block --file "$backup_dir/serverkey_private.asc"
+    /home/ubuntu/azure-cli-venv/bin/az storage blob upload --account-name "$AZURE_STORAGE_ACCOUNT" --account-key "$AZURE_STORAGE_KEY" --container-name "$AZURE_CONTAINER_NAME" --name serverkey.asc --type block --file "$backup_dir/serverkey.asc"
+}
+
+start_containers
+export_passbolt_database
+backup_server_keys
+push_backup_to_azure_blob
